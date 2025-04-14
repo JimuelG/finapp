@@ -1,6 +1,6 @@
 namespace Core.Entities;
 
-public class Expense : BaseEntity
+public class Expense : AuditableEntity
 {
     public decimal Amount { get; set; }
     public string Category { get; set; } = string.Empty;

@@ -7,6 +7,10 @@ public class User : BaseEntity
     public byte[] PasswordHash { get; set; }
     public byte[] PasswordSalt { get; set; }
 
+    public string FirstName { get; set; }
+    public string LastName { get; set; }
+    public DateTime DateOfBirth { get; set; }
+    public string Gender { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public ICollection<Expense> Expenses { get; set; } = new List<Expense>();

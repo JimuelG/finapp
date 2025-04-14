@@ -5,11 +5,13 @@ namespace Core.Interfaces;
 public interface IGenericRepository<T> where T : BaseEntity
 {
     Task<T?> GetByIdAsync(int id);
-    Task<IReadOnlyList<T?>> ListAllAsync();
+    Task<IReadOnlyList<T?>> ListAllAsync(CancellationToken cancellationToken);
+    Task<T?> GetEntityWithSpec(ISpecification<T> spec);
+    Task<IReadOnlyList<T>> ListAsync(ISpecification<T> spec);
     void Add (T entity);
     void Update (T entity);
     void Remove (T entity);
-    Task<bool> SaveAllAsync();
+    Task<bool> SaveAllAsync(CancellationToken cancellationToken);
     bool Exists(int id);
     
 }
