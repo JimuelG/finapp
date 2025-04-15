@@ -5,6 +5,7 @@ namespace Core.Specifications;
 
 public class BaseSpecification<T> : ISpecification<T>
 {
+
     public Expression<Func<T, bool>>? Criteria { get; private set; }
 
     public List<Expression<Func<T, object>>> Includes { get; } = [];
@@ -19,6 +20,15 @@ public class BaseSpecification<T> : ISpecification<T>
 
     public bool IsPagingEnabled { get; private set; } = false;
 
+    public IQueryable<T> ApplyCriteria(IQueryable<T> query)
+    {
+        if (Criteria != null)
+        {
+            query = query.Where(Criteria);
+        }
+
+        return query;
+    }
 
     protected void AddCriteria(Expression<Func<T, bool>> criteria)
     {

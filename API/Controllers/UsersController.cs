@@ -1,5 +1,6 @@
 using Core.Entities;
 using Core.Interfaces;
+using Core.Specifications.UserSpecs;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
@@ -7,9 +8,12 @@ namespace API.Controllers;
 public class UsersController(IGenericRepository<User> repo) : BaseApiController
 {
     [HttpGet]
-    public async Task<ActionResult<IReadOnlyList<User>>> GetUsers(CancellationToken cancellationToken)
+    public async Task<ActionResult<IReadOnlyList<User>>> GetUsers(
+        [FromQuery]UserSpecParams specParams)
     {
-        return Ok(await repo.ListAllAsync(cancellationToken));
+        var spec = new PaginatedUsersSpec(specParams);
+
+        return await CreatePagedResult(repo, spec, specParams.PageIndex,specParams.PageSize);
     }
 
     [HttpGet("{id:int}")]
