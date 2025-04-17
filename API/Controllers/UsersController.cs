@@ -1,3 +1,7 @@
+using System.Security.Cryptography;
+using System.Text;
+using API.DTOs;
+using API.DTOs.User;
 using Core.Entities;
 using Core.Interfaces;
 using Core.Specifications.UserSpecs;
@@ -28,17 +32,56 @@ public class UsersController(IGenericRepository<User> repo) : BaseApiController
         return user;
     }
 
-    [HttpPost]
-    public async Task<ActionResult<User>> CreateUser(User user, CancellationToken cancellationToken)
+    [HttpPost("register")]
+    public async Task<ActionResult<UserDto>> RegisterUser(RegisterDto dto, CancellationToken cancellationToken)
     {
+        var spec = new UserWithEmailSpec(dto.Email);
+        var existingUser = await repo.GetEntityWithSpec(spec);
+
+        if (existingUser != null)
+            return BadRequest("Email is already in use");
+        
+        using var hmac = new HMACSHA512();
+
+        var user = new User
+        {
+            Username = dto.Username,
+            Email = dto.Email.ToLower(),
+            FirstName = dto.FirstName,
+            LastName = dto.LastName,
+            Gender = dto.Gender,
+            DateOfBirth = dto.DateOfBirth,
+            PasswordHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(dto.Password)),
+            PasswordSalt = hmac.Key
+        };
+
         repo.Add(user);
 
         if (await repo.SaveAllAsync(cancellationToken))
         {
-            return CreatedAtAction("GetUser", new {id = user.Id}, user);
+            return new UserDto { Id = user.Id, Username = user.Username, Email = user.Email };
         }
+        
+        return BadRequest("Problem registering user");
 
-        return BadRequest("Problem creating this user");
+    }
+
+    [HttpPost("login")]
+    public async Task<ActionResult<UserDto>> LoginUser(LoginDto dto)
+    {
+        var spec = new UserWithEmailSpec(dto.Email);
+        var user = await repo.GetEntityWithSpec(spec);
+
+        if (user == null)
+            return Unauthorized("Invalid email or password");
+
+        using var hmac = new HMACSHA512(user.PasswordSalt);
+        var computedHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(dto.Password));
+
+        if (!computedHash.SequenceEqual(user.PasswordHash))
+            return Unauthorized("Invalid email or password");
+
+        return new UserDto { Id = user.Id, Username = user.Username, Email = user.Email };
     }
 
     [HttpPut("{id:int}")]
@@ -72,6 +115,8 @@ public class UsersController(IGenericRepository<User> repo) : BaseApiController
 
         return BadRequest("Problem deleting user");
     }
+
+    
 
 
     private bool UserExists(int id)
