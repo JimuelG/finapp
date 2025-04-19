@@ -5,6 +5,7 @@ using API.DTOs.User;
 using Core.Entities;
 using Core.Interfaces;
 using Core.Specifications.UserSpecs;
+using Infrastructure.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
@@ -72,6 +73,8 @@ public class UsersController(IGenericRepository<User> repo) : BaseApiController
         var spec = new UserWithEmailSpec(dto.Email);
         var user = await repo.GetEntityWithSpec(spec);
 
+        if (user == null) return Unauthorized("Invalid credentials");
+
         if (user == null)
             return Unauthorized("Invalid email or password");
 
@@ -81,7 +84,15 @@ public class UsersController(IGenericRepository<User> repo) : BaseApiController
         if (!computedHash.SequenceEqual(user.PasswordHash))
             return Unauthorized("Invalid email or password");
 
-        return new UserDto { Id = user.Id, Username = user.Username, Email = user.Email };
+        var token = JwtTokenService.CreateToken(user);
+
+        return new UserDto
+        { 
+            Id = user.Id, 
+            Username = user.Username, 
+            Email = user.Email,
+            Token = token
+        };
     }
 
     [HttpPut("{id:int}")]
