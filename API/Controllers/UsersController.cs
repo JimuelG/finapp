@@ -4,14 +4,17 @@ using API.DTOs;
 using API.DTOs.User;
 using Core.Entities;
 using Core.Interfaces;
+using Core.Services;
 using Core.Specifications.UserSpecs;
 using Infrastructure.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
 
-public class UsersController(IGenericRepository<User> repo) : BaseApiController
+public class UsersController(IGenericRepository<User> repo, IJwtTokenService tokenService) : BaseApiController
 {
+    [Authorize]
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<User>>> GetUsers(
         [FromQuery]UserSpecParams specParams)
@@ -75,16 +78,12 @@ public class UsersController(IGenericRepository<User> repo) : BaseApiController
 
         if (user == null) return Unauthorized("Invalid credentials");
 
-        if (user == null)
-            return Unauthorized("Invalid email or password");
-
         using var hmac = new HMACSHA512(user.PasswordSalt);
         var computedHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(dto.Password));
 
-        if (!computedHash.SequenceEqual(user.PasswordHash))
-            return Unauthorized("Invalid email or password");
+        if (!computedHash.SequenceEqual(user.PasswordHash)) return Unauthorized("Invalid email or password");
 
-        var token = JwtTokenService.CreateToken(user);
+        var token = tokenService.CreateToken(user);
 
         return new UserDto
         { 

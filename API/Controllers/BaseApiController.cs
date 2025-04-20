@@ -1,3 +1,4 @@
+using System.Text.Json;
 using API.RequestHelpers;
 using Core.Entities;
 using Core.Interfaces;
@@ -16,6 +17,10 @@ public class BaseApiController : ControllerBase
         var count = await repo.CountAsync(spec);
 
         var pagination = new Pagination<T>(pageIndex, pageSize, count, items);
+
+        var metadata = new PaginationHeader(pageIndex, pageSize, count);
+        Response.Headers.Append("Pagination", JsonSerializer.Serialize(metadata));
+        Response.Headers.Append("Access-Control-Expose-Headers", "Pagination");
 
         return Ok(pagination);
     }
